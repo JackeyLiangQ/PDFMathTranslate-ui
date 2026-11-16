@@ -1,3 +1,17 @@
+
+## Project Overview
+
+This repository contains the `pdf2zh` scientific PDF translation engine and the Windows desktop application **Pdf2zh Studio**.
+
+- `pdf2zh/`: core translation engine, layout preservation, OCR, CLI, GUI, and translation backends.
+- `desktop/`: Pdf2zh Studio for Windows, with local GGUF model inference and a desktop workflow for document translation.
+- `docs/`: usage, API, advanced configuration, and localized documentation.
+
+### Pdf2zh Studio
+
+Pdf2zh Studio provides a desktop workflow for translating academic papers and technical PDFs while preserving formulas, tables, annotations, and page layout. It runs translation locally with GGUF models; imported documents and models remain on the local machine.
+
+To learn about the desktop build and usage, see [`desktop/README.md`](desktop/README.md).
 <div align="center">
 	<a href="https://go.warp.dev/PDFMathTranslate" target="_blank">
 		<sup>Special thanks to:</sup>
@@ -420,3 +434,4 @@ For details on how to contribute, please consult the [Contribution Guide](https:
   <img alt="Star history" src="assets/star-history/star-history-light.svg">
 </picture>
 <!-- star-history:end -->
+

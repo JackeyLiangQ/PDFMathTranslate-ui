@@ -92,6 +92,12 @@ target/
 
 # IPython
 profile_default/
+\n+# Pdf2zh Studio local build/runtime artifacts
+desktop/resources/cuda-backend/
+desktop/resources/doclayout.onnx
+desktop/build/
+desktop/dist/
+desktop/test-output/
 ipython_config.py
 
 # pyenv

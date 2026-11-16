@@ -1,3 +1,17 @@
+
+## 项目概况
+
+本仓库包含 `pdf2zh` 科学 PDF 翻译引擎，以及 Windows 桌面应用 **Pdf2zh Studio**。
+
+- `pdf2zh/`：翻译核心、版面保留、OCR、命令行工具、GUI 和翻译服务后端。
+- `desktop/`：Pdf2zh Studio Windows 桌面版，支持本地 GGUF 模型推理和文档翻译工作流。
+- `docs/`：使用说明、API、高级配置和多语言文档。
+
+### Pdf2zh Studio
+
+Pdf2zh Studio 面向学术论文和技术文档，尽量保留公式、表格、注释和页面排版。翻译使用本地 GGUF 模型，导入的 PDF 和模型都留在本机。
+
+桌面版的构建和使用说明请查看 [`desktop/README.md`](../desktop/README.md)。
 <div align="center">
 
 [English](../README.md) | 简体中文 | [繁體中文](README_zh-TW.md) | [日本語](README_ja-JP.md)
@@ -322,3 +336,4 @@ API 暂时弃用意味着：相关代码暂时不会被移除，但不会提供�
    <img alt="星标历史图表" src="https://api.star-history.com/svg?repos=Byaidu/PDFMathTranslate&type=Date"/>
  </picture>
 </a>
+
