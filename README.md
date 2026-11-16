@@ -1,17 +1,24 @@
 
 ## Project Overview
 
-This repository contains the `pdf2zh` scientific PDF translation engine and the Windows desktop application **Pdf2zh Studio**.
+This repository is a fork of [Byaidu/PDFMathTranslate](https://github.com/Byaidu/PDFMathTranslate) that packages the scientific PDF translation engine as a Windows desktop workflow. It retains the original `pdf2zh` implementation and adds **Pdf2zh Studio** for local document translation.
 
-- `pdf2zh/`: core translation engine, layout preservation, OCR, CLI, GUI, and translation backends.
-- `desktop/`: Pdf2zh Studio for Windows, with local GGUF model inference and a desktop workflow for document translation.
-- `docs/`: usage, API, advanced configuration, and localized documentation.
+Pdf2zh Studio lets users import a GGUF instruction model, translate academic papers and technical documents on the local machine through a llama.cpp backend, and export monolingual, bilingual, or side-by-side PDFs. Its translation pipeline works to preserve formulas, tables, annotations, and the original page layout.
 
-### Pdf2zh Studio
+### Repository Layout
 
-Pdf2zh Studio provides a desktop workflow for translating academic papers and technical PDFs while preserving formulas, tables, annotations, and page layout. It runs translation locally with GGUF models; imported documents and models remain on the local machine.
+- `pdf2zh/`: Core scientific PDF translation engine, including layout analysis, OCR, CLI, web GUI, server integrations, and translation backends.
+- `desktop/`: Windows desktop application, local model workflow, and build configuration for Pdf2zh Studio.
+- `docs/`: Installation, usage, advanced configuration, API, and localized documentation.
+
+### Focus
+
+- Provide a self-contained Windows desktop workflow that does not require system Python at runtime.
+- Keep document text and model inference local when using the desktop application.
+- Preserve access to the upstream command-line, web GUI, OCR, API/server, and translation-backend capabilities.
 
 To learn about the desktop build and usage, see [`desktop/README.md`](desktop/README.md).
+
 <div align="center">
 	<a href="https://go.warp.dev/PDFMathTranslate" target="_blank">
 		<sup>Special thanks to:</sup>

@@ -1,17 +1,24 @@
 
 ## 项目概况
 
-本仓库包含 `pdf2zh` 科学 PDF 翻译引擎，以及 Windows 桌面应用 **Pdf2zh Studio**。
+本仓库是基于 [Byaidu/PDFMathTranslate](https://github.com/Byaidu/PDFMathTranslate) 的派生版本，将科学 PDF 翻译引擎整合为 Windows 桌面工作流。仓库保留原有 `pdf2zh` 实现，并加入用于本地文档翻译的 **Pdf2zh Studio**。
 
-- `pdf2zh/`：翻译核心、版面保留、OCR、命令行工具、GUI 和翻译服务后端。
-- `desktop/`：Pdf2zh Studio Windows 桌面版，支持本地 GGUF 模型推理和文档翻译工作流。
-- `docs/`：使用说明、API、高级配置和多语言文档。
+Pdf2zh Studio 支持导入 GGUF 指令模型，通过本地 llama.cpp 后端翻译学术论文和技术文档，并可导出单语、双语或左右对照 PDF。翻译流程会尽量保留公式、表格、注释和原始页面排版。
 
-### Pdf2zh Studio
+### 仓库结构
 
-Pdf2zh Studio 面向学术论文和技术文档，尽量保留公式、表格、注释和页面排版。翻译使用本地 GGUF 模型，导入的 PDF 和模型都留在本机。
+- `pdf2zh/`：科学 PDF 翻译核心，包括版面分析、OCR、命令行工具、Web GUI、服务端集成和翻译服务后端。
+- `desktop/`：Pdf2zh Studio 的 Windows 桌面应用、本地模型工作流和构建配置。
+- `docs/`：安装、使用、高级配置、API 和多语言文档。
+
+### 建设重点
+
+- 提供无需系统 Python 即可运行的自包含 Windows 桌面工作流。
+- 使用桌面应用时，让文档文本和模型推理留在本机。
+- 保留上游的命令行、Web GUI、OCR、API/服务端和翻译服务后端能力。
 
 桌面版的构建和使用说明请查看 [`desktop/README.md`](../desktop/README.md)。
+
 <div align="center">
 
 [English](../README.md) | 简体中文 | [繁體中文](README_zh-TW.md) | [日本語](README_ja-JP.md)
