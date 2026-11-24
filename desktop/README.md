@@ -79,3 +79,6 @@ Pdf2zhStudio.exe --self-test-bridge <report.json>
 Pdf2zhStudio.exe --self-test-bridge <report.json> --model <model.gguf>
 ```
 
+GitHub Actions 使用 `.github/workflows/desktop-installer.yml` 自动完成上述步骤，并通过 `desktop/installer/Pdf2zhStudio.iss` 生成安装包。
+
+

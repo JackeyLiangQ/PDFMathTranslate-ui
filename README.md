@@ -81,11 +81,11 @@ Pdf2zh Studio 是一个面向 Windows 的本地 PDF 学术翻译桌面应用。�
 ## 项目结构
 
 ```text
-pdf2zh/              PDFMathTranslate 核心翻译引擎
+pdf2zh/              PDFMathTranslate 核心处理链
 desktop/app/         Windows 桌面界面、模型服务和翻译适配层
+desktop/installer/   Inno Setup 安装程序
 desktop/resources/   字体、图标和桌面运行资源
-desktop/             桌面端开发、运行和打包说明
-docs/                上游核心引擎文档
+.github/workflows/   Windows 安装包构建与 Release 发布
 ```
 
 ## 上游与许可
