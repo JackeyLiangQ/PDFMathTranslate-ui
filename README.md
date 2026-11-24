@@ -97,5 +97,7 @@ Pdf2zh Studio 建立在以下开源项目之上：
 - [BabelDOC](https://github.com/funstory-ai/BabelDOC)
 - [llama.cpp](https://github.com/ggml-org/llama.cpp)
 
-本仓库继续遵循上游许可证。第三方组件和模型的许可证以各自项目为准。
+本仓库自身以 **GNU Affero General Public License v3.0（AGPL-3.0）** 发布，完整许可证见 [LICENSE](LICENSE)。桌面安装包包含上游处理链，分发时请同时遵守 PDFMathTranslate、PDFMathTranslate-next 和 BabelDOC 的 AGPL-3.0 条款。
+
+`llama.cpp` 按其 MIT 许可证分发。字体文件按其上游字体许可证分发，GGUF 模型不包含在本仓库的许可证范围内，模型使用和再分发条件由模型提供方决定。详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 

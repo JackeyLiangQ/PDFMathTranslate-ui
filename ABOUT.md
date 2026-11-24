@@ -46,5 +46,7 @@ PDF 解析、版面检测、段落重排、公式保护、表格处理和 PDF �
 
 ## 许可证
 
-本仓库基于 PDFMathTranslate、PDFMathTranslate-next、BabelDOC 和 llama.cpp 等上游项目，遵循相应开源许可证。使用或分发时请同时遵守上游和第三方模型许可证。
+本仓库自身以 **GNU Affero General Public License v3.0（AGPL-3.0）** 发布，完整文本见 [LICENSE](LICENSE)。由于 Pdf2zh Studio 包含并调用 PDFMathTranslate、PDFMathTranslate-next 和 BabelDOC 的 AGPL-3.0 处理链，分发修改版或网络服务时必须遵守 AGPL-3.0 的源码提供要求。
+
+`llama.cpp` 使用 MIT 许可证。字体文件保留各自上游字体许可证。用户导入的 GGUF 模型不属于本仓库分发内容，模型授权由模型提供方决定。第三方声明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
