@@ -1,5 +1,8 @@
 const $ = id => document.getElementById(id);
 const state = {models: [], jobs: [], file: null, format: 'dual', loadedModel: null};
+let jobPollTimer = null;
+let jobPollBusy = false;
+const jobStatuses = new Map();
 const titles = {translate:['文档翻译','保留论文排版，让阅读没有语言边界。'],models:['本地模型','从本地 GGUF 模型获得私密、离线的翻译能力。'],history:['翻译记录','查找本次运行生成的译文。'],settings:['设置','管理应用与本地推理环境。']};
 const paths = {
  languages:'<path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/>',
@@ -26,25 +29,95 @@ async function api(method,...args){try{return await window.pywebview.api[method]
 function notify(title,message,kind='success'){const toast=document.createElement('div');toast.className=`toast ${kind}`;toast.innerHTML='<strong></strong><p></p>';toast.querySelector('strong').textContent=title;toast.querySelector('p').textContent=message;$('toastRegion').appendChild(toast);setTimeout(()=>toast.remove(),kind==='error'?12000:6000);}
 function size(bytes){return bytes>1073741824?`${(bytes/1073741824).toFixed(2)} GB`:`${(bytes/1048576).toFixed(1)} MB`;}
 function navigate(view){document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===`view-${view}`));document.querySelectorAll('.nav-item[data-view]').forEach(el=>el.classList.toggle('active',el.dataset.view===view));$('pageTitle').textContent=titles[view][0];$('pageDescription').textContent=titles[view][1];}
-async function refresh(){const next=await api('get_state');Object.assign(state,next);state.format=next.settings.format||'dual';$('targetLanguage').value=next.settings.language||'zh';$('threads').value=next.settings.threads||2;$('threadValue').textContent=$('threads').value;$('contextLength').value=next.settings.context||4096;$('ocrEnabled').checked=next.settings.ocr!==false;$('translateTableText').checked=next.settings.translateTableText!==false;$('outputPath').textContent=next.outputDir;$('ramInfo').textContent=`可用内存 ${next.resource.ram} GB`;$('coreInfo').textContent=`${next.resource.cores} 线程`;document.querySelectorAll('[data-format]').forEach(el=>el.classList.toggle('selected',el.dataset.format===state.format));renderModels();renderJobs();updateEngine();if(!next.loading)$('loadingOverlay').classList.add('hidden');}
+async function refresh(){const next=await api('get_state');Object.assign(state,next);state.format=next.settings.format||'dual';$('targetLanguage').value=next.settings.language||'zh';$('threads').value=next.settings.threads||2;$('threadValue').textContent=$('threads').value;$('contextLength').value=next.settings.context||4096;$('maxPagesPerPart').value=next.settings.maxPagesPerPart??50;$('ocrEnabled').checked=next.settings.ocr!==false;$('translateTableText').checked=next.settings.translateTableText!==false;$('outputPath').textContent=next.outputDir;$('ramInfo').textContent=`可用内存 ${next.resource.ram} GB`;$('coreInfo').textContent=`${next.resource.cores} 线程`;document.querySelectorAll('[data-format]').forEach(el=>el.classList.toggle('selected',el.dataset.format===state.format));renderModels();renderJobs();updateEngine();updateLoading(next);if(!next.loading)$('loadingOverlay').classList.add('hidden');}
+function updateLoading(next){if(next.loadingModel)$('loadingName').textContent=next.loadingModel;if(next.loadingDetail)$('loadingStage').textContent=next.loadingDetail;$('loadingElapsed').textContent=next.loadingElapsed?`已用时 ${next.loadingElapsed} 秒，正在等待本地服务响应`:'首次加载可能需要一些时间';if(next.loading)$('loadingOverlay').classList.remove('hidden');}
 function updateEngine(){const label=state.loadedModel?`${state.loadedModel} · ${state.device||'CUDA'}`:'等待本地模型';$('engineBadge').classList.toggle('ready',!!state.loadedModel);$('engineBadge').querySelector('span:last-child').textContent=label;$('modelDot').classList.toggle('hidden',!state.loadedModel);$('translationModel').textContent=state.loadedModel?`${state.loadedModel} · ${state.device||'CUDA'} 推理`:'使用本地 GGUF 模型';}
 function renderModels(){if(!state.models.length){$('modelList').innerHTML='<div class="empty-list"><i data-icon="box"></i><h3>模型库还是空的</h3><p>点击上方「导入 GGUF 模型」，选择电脑里的模型文件。</p></div>';icons($('modelList'));return;}$('modelList').innerHTML=state.models.map(m=>`<article class="model-item ${state.loadedModel===m.name?'loaded':''}"><div class="model-symbol"><i data-icon="cpu"></i></div><div class="model-copy"><h3>${escapeHtml(m.name)}</h3><p>GGUF · ${size(m.size)}</p><div class="model-state">${state.loadedModel===m.name?'● 已加载 · 可用于文档翻译':''}</div></div><div class="model-actions">${state.loadedModel===m.name?'<button class="button secondary" data-action="unload">卸载模型</button>':`<button class="button primary" data-action="load" data-name="${escapeHtml(m.name)}"><i data-icon="cpu"></i>加载模型</button><button class="icon-button" data-action="remove" data-name="${escapeHtml(m.name)}" title="删除模型"><i data-icon="trash"></i></button>`}</div></article>`).join('');icons($('modelList'));}
 function escapeHtml(value){const div=document.createElement('div');div.textContent=value;return div.innerHTML;}
 function renderJobs(){const jobs=[...state.jobs].reverse();$('historyList').innerHTML=jobs.length?jobs.map(j=>`<article class="history-item"><i data-icon="file-text"></i><div class="history-copy"><h3>${escapeHtml(j.name)}</h3><p>${escapeHtml(j.detail)} · ${j.progress}%</p></div><span class="job-status">${{completed:'已完成',failed:'失败',running:'翻译中',cancelled:'已取消'}[j.status]}</span>${j.outputs?.length?`<button class="button secondary" data-open="${escapeHtml(j.outputs[0].path)}"><i data-icon="external-link"></i>打开译文</button>`:''}</article>`).join(''):'<div class="empty-list"><i data-icon="history"></i><h3>还没有翻译记录</h3><p>完成的文档会显示在这里。</p></div>';icons($('historyList'));}
+async function pollJobs(){
+  if(jobPollBusy)return;
+  jobPollBusy=true;
+  try{
+    const next=await window.pywebview.api.get_state();
+    state.jobs=next.jobs||[];
+    const active=state.jobs.find(j=>j.status==='running')||state.jobs[state.jobs.length-1];
+    state.jobs.forEach(job=>{
+      const previous=jobStatuses.get(job.id);
+      if(previous==='running'&&job.status!=='running'){
+        if(job.status==='completed')notify('文档翻译完成',`已生成 ${job.outputs?.[0]?.name||job.name}`,'success');
+        if(job.status==='failed')notify('翻译失败',job.detail||'翻译任务失败。','error');
+        if(job.status==='cancelled')notify('任务已取消','翻译任务已停止。','info');
+      }
+      jobStatuses.set(job.id,job.status);
+    });
+    if(active)showJob(active);
+    renderJobs();
+    if(!state.jobs.some(j=>j.status==='running')){
+      clearInterval(jobPollTimer);
+      jobPollTimer=null;
+    }
+  }catch(error){
+    // A transient bridge error should not stop the translation task or freeze the UI.
+  }finally{jobPollBusy=false;}
+}
+function startJobPolling(){
+  clearInterval(jobPollTimer);
+  jobPollTimer=setInterval(pollJobs,500);
+  pollJobs();
+}
 async function choosePdf(){const file=await api('pick_pdf');if(file)setFile(file);}
 function setFile(file){state.file=file;$('emptyFile').classList.add('hidden');$('fileInfo').classList.remove('hidden');const preview=$('pdfPreview');const fallback=$('pdfPreviewFallback');fallback.classList.add('hidden');preview.classList.remove('hidden');preview.src=file.preview;$('pdfName').textContent=file.name;$('pdfMeta').textContent=`${file.pages} 页 · ${size(file.size)}`;$('pdfSample').textContent=file.sample||'未检测到可提取文字，此文档可能是扫描件。';$('textStatus').textContent=file.hasText?'已检测到文本 · 可保留排版翻译':'扫描件 · 可使用 OCR 识别文字';$('completedBox').classList.add('hidden');}
 function setupPreviewFallback(){const preview=$('pdfPreview');const fallback=$('pdfPreviewFallback');preview.onload=()=>{preview.classList.remove('hidden');fallback.classList.add('hidden');};preview.onerror=()=>{preview.classList.add('hidden');fallback.classList.remove('hidden');};}
-async function start(){if(!state.file)return notify('请先选择 PDF','选择需要翻译的文档后再开始。','error');if(!state.loadedModel){navigate('models');return notify('需要本地模型','请导入并加载 GGUF 模型。','error');}const request={path:state.file.path,sourceLanguage:$('sourceLanguage').value,language:$('targetLanguage').value,format:state.format,pages:$('pages').value,threads:Number($('threads').value),ocr:$('ocrEnabled').checked,translateTableText:$('translateTableText').checked};const job=await api('start_translation',request);state.jobs.push(job);showJob(job);renderJobs();}
+async function waitForModelLoad(name){
+  const deadline=Date.now()+420*1000;
+  while(Date.now()<deadline){
+    await new Promise(resolve=>setTimeout(resolve,1000));
+    const next=await api('get_state');
+    Object.assign(state,next);
+    updateLoading(next);
+    renderModels();
+    updateEngine();
+    if(next.loadingError){
+      $('loadingOverlay').classList.add('hidden');
+      notify('模型加载失败',next.loadingError,'error');
+      return next;
+    }
+    if(!next.loading){
+      $('loadingOverlay').classList.add('hidden');
+      if(next.loadedModel!==name) notify('模型未加载','后端没有完成模型加载，请查看错误提示。','error');
+      return next;
+    }
+  }
+  $('loadingOverlay').classList.add('hidden');
+  notify('模型加载超时','模型加载超过 420 秒，已停止等待。请检查显存、内存占用与 cuda-server.log。','error');
+  return null;
+}
+async function start(){if(!state.file)return notify('请先选择 PDF','选择需要翻译的文档后再开始。','error');if(!state.loadedModel){navigate('models');return notify('需要本地模型','请导入并加载 GGUF 模型。','error');}const request={path:state.file.path,sourceLanguage:$('sourceLanguage').value,language:$('targetLanguage').value,format:state.format,pages:$('pages').value,threads:Number($('threads').value),maxPagesPerPart:Number($('maxPagesPerPart').value),ocr:$('ocrEnabled').checked,translateTableText:$('translateTableText').checked};const job=await api('start_translation',request);state.jobs.push(job);jobStatuses.set(job.id,job.status);showJob(job);renderJobs();startJobPolling();}
 function showJob(job){$('activeJob').classList.toggle('hidden',job.status!=='running');$('completedBox').classList.toggle('hidden',job.status!=='completed');$('jobDetail').textContent=job.detail;$('jobPercent').textContent=`${job.progress}%`;$('jobProgress').style.width=`${job.progress}%`;$('startTranslate').disabled=job.status==='running';if(job.status==='completed'){$('completedName').textContent=job.outputs[0]?.name||job.name;$('openResult').dataset.path=job.outputs[0]?.path||'';}}
-window.studioEvent=(event,data)=>{if(event==='notification'){notify(data.title,data.message,data.kind);refresh();}if(event==='job-updated'){const index=state.jobs.findIndex(j=>j.id===data.id);if(index>=0)state.jobs[index]=data;else state.jobs.push(data);showJob(data);renderJobs();}};
-window.addEventListener('pywebviewready',refresh);
+window.studioEvent=(event,data)=>{if(event==='notification'){notify(data.title,data.message,data.kind);refresh();}if(event==='model-loading'){updateLoading({...data,loading:true});}if(event==='model-state'&&!data.loading){$('loadingOverlay').classList.add('hidden');refresh();}if(event==='job-updated'){const index=state.jobs.findIndex(j=>j.id===data.id);if(index>=0)state.jobs[index]=data;else state.jobs.push(data);showJob(data);renderJobs();}};
+window.addEventListener('pywebviewready',()=>refresh().then(()=>{if(state.jobs.some(j=>j.status==='running'))startJobPolling();}));
 setupPreviewFallback();
 document.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>navigate(el.dataset.view)));
 $('choosePdf').onclick=choosePdf;$('changePdf').onclick=choosePdf;$('removePdf').onclick=()=>{state.file=null;$('fileInfo').classList.add('hidden');$('emptyFile').classList.remove('hidden');$('completedBox').classList.add('hidden');};
 $('startTranslate').onclick=start;$('cancelJob').onclick=()=>api('cancel_translation');$('threads').oninput=()=>$('threadValue').textContent=$('threads').value;
 document.querySelectorAll('[data-format]').forEach(el=>el.onclick=()=>{state.format=el.dataset.format;document.querySelectorAll('[data-format]').forEach(b=>b.classList.toggle('selected',b===el));});
-$('importModel').onclick=async()=>{if(await api('pick_model'))refresh();};
-$('modelList').onclick=async event=>{const button=event.target.closest('button');if(!button)return;const{action,name}=button.dataset;if(action==='load'){$('loadingName').textContent=name;$('loadingOverlay').classList.remove('hidden');await api('load_model',name,Number($('contextLength').value));}if(action==='unload')await api('unload_model');if(action==='remove'&&confirm(`从模型库删除 ${name}？原文件不会被删除。`))await api('remove_model',name);refresh();};
+$('importModel').onclick=async()=>{
+  const button=$('importModel');
+  if(button.disabled)return;
+  const label=button.innerHTML;
+  button.disabled=true;
+  button.textContent='正在导入…';
+  try{
+    if(await api('pick_model'))await refresh();
+  }catch(error){
+    // api() already displays the failure; always restore the import button.
+  }finally{
+    button.innerHTML=label;
+    button.disabled=false;
+  }
+};
+$('modelList').onclick=async event=>{const button=event.target.closest('button');if(!button)return;const{action,name}=button.dataset;if(action==='load'){button.disabled=true;$('loadingName').textContent=name;$('loadingStage').textContent='正在准备模型';$('loadingElapsed').textContent='首次加载可能需要一些时间';$('loadingOverlay').classList.remove('hidden');try{await api('load_model',name,Number($('contextLength').value));await waitForModelLoad(name);}catch(error){$('loadingOverlay').classList.add('hidden');notify('模型加载失败',error.message||String(error),'error');}finally{await refresh();}}if(action==='unload')await api('unload_model');if(action==='remove'&&confirm(`从模型库删除 ${name}？原文件不会被删除。`))await api('remove_model',name);if(action!=='load')refresh();};
 $('historyList').onclick=e=>{const button=e.target.closest('[data-open]');if(button)api('open_output',button.dataset.open);};
 $('openFolder').onclick=()=>api('open_output');$('openResult').onclick=()=>api('open_output',$('openResult').dataset.path);
 $('chooseOutput').onclick=async()=>{const r=await api('choose_output_dir');$('outputPath').textContent=r.outputDir;};

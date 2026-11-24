@@ -12,6 +12,16 @@ def _asset_path() -> str:
 
 def main() -> None:
     multiprocessing.freeze_support()
+    if "--self-test-bridge" in sys.argv:
+        from app._bridge_test import run
+        index = sys.argv.index("--self-test-bridge")
+        model = sys.argv[sys.argv.index("--model") + 1] if "--model" in sys.argv else None
+        try:
+            run(sys.argv[index + 1], timeout=90 if model else 30, model_path=model)
+        except Exception:
+            # Diagnostic failures are recorded by the runner, without a GUI alert.
+            raise SystemExit(1)
+        return
     if "--self-test" in sys.argv:
         from app._launch_test import run
         run()
