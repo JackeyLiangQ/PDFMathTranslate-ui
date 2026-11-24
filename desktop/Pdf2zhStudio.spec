@@ -1,8 +1,15 @@
 from pathlib import Path
 
+from PyInstaller.utils.hooks import collect_data_files
+
 root = Path.cwd()
 repo_root = root.parent
 site = repo_root / ".venv"
+extra_datas = (
+    collect_data_files("webview")
+    + collect_data_files("pythonnet")
+    + collect_data_files("rapidocr_onnxruntime")
+)
 
 a = Analysis(
     ["app/main.py"],
@@ -11,11 +18,7 @@ a = Analysis(
     datas=[
         ("app/assets", "assets"),
         ("resources", "resources"),
-        (str(site / "webview/js"), "webview/js"),
-        (str(site / "webview/lib"), "webview/lib"),
-        (str(site / "pythonnet"), "pythonnet"),
-        (str(site / "rapidocr_onnxruntime"), "rapidocr_onnxruntime"),
-    ],
+    ] + extra_datas,
     hiddenimports=[
         "webview.platforms.winforms",
         "pdf2zh.converter",
