@@ -1,20 +1,27 @@
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import collect_data_files, get_package_paths
 
 root = Path.cwd()
 repo_root = root.parent
 site = repo_root / ".venv"
+hyperscan_base, _ = get_package_paths("hyperscan")
+hyperscan_libs = Path(hyperscan_base) / "hyperscan.libs"
 extra_datas = (
     collect_data_files("webview")
     + collect_data_files("pythonnet")
     + collect_data_files("rapidocr_onnxruntime")
+    + collect_data_files("hyperscan")
 )
+extra_binaries = [
+    (str(path), "hyperscan.libs")
+    for path in hyperscan_libs.glob("*.dll")
+]
 
 a = Analysis(
     ["app/main.py"],
     pathex=[str(root), str(repo_root), str(site)],
-    binaries=[],
+    binaries=extra_binaries,
     datas=[
         ("app/assets", "assets"),
         ("resources", "resources"),
@@ -28,6 +35,8 @@ a = Analysis(
         "onnxruntime",
         "cv2",
         "fitz",
+        "hyperscan",
+        "hyperscan._hs_ext",
         "rapidocr_onnxruntime",
         "babeldoc.docvision.table_detection.rapidocr",
         "babeldoc._rust_il",
